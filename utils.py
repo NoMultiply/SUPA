@@ -140,10 +140,11 @@ def get_metrics(edges, model, neighbors, all_nodes, device):
             edges, model.node_embeddings, neighbors, all_nodes, device)
         _, _, head_ranks_numpy, tail_ranks_numpy, head_lengths_numpy, tail_lengths_numpy = get_rank_info(
             head_ranks, tail_ranks, head_lengths, tail_lengths)
+        print('==========================================')
         print('MRR:', (np.mean(1 / head_ranks_numpy) + np.mean(1 / tail_ranks_numpy)) / 2)
-        print('Recall_100:',
+        print('HitRate@100:',
               ((head_ranks_numpy <= 100).sum() + (tail_ranks_numpy <= 100).sum()) / head_lengths_numpy.shape[0] / 2)
-        print('Recall_50:',
+        print('HitRate@50:',
               ((head_ranks_numpy <= 50).sum() + (tail_ranks_numpy <= 50).sum()) / head_lengths_numpy.shape[0] / 2)
-        print('Recall_20:',
+        print('HitRate@20:',
               ((head_ranks_numpy <= 20).sum() + (tail_ranks_numpy <= 20).sum()) / head_lengths_numpy.shape[0] / 2)

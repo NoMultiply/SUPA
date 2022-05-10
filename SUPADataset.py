@@ -33,7 +33,7 @@ class SUPADataset:
         return np.array(edges)
 
     def print_info(self):
-        print('===========================================')
+        print('============================================')
         print('Dataset:', self.root)
         print('# of node types:', self.n_node_types)
         print('# of edge types:', self.n_edge_types)
@@ -42,4 +42,4 @@ class SUPADataset:
         print('# of valid edges:', self.valid_edges.shape[0])
         print('# of test edges:', self.test_edges.shape[0])
         print('Max time delta:', self.test_edges[-1][-1])
-        print('===========================================')
+        print('============================================')

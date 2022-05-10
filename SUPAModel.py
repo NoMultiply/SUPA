@@ -215,9 +215,13 @@ class SUPAModel(nn.Module):
         mask_min = min(u_pos_reps_mask.min(), v_pos_reps_mask.min())
         mask_avg = (u_pos_reps_mask.mean() + v_pos_reps_mask.mean()) / 2
 
-        init_mrr = valid_model_func(valid_edges, self, neighbors, nodes_tensor, device)
-        best_valid_mrr = init_mrr
-        best_mode_state_dict = deepcopy(self.state_dict())
+        if valid_interval != 0:
+            init_mrr = valid_model_func(valid_edges, self, neighbors, nodes_tensor, device)
+            best_valid_mrr = init_mrr
+            best_mode_state_dict = deepcopy(self.state_dict())
+        else:
+            init_mrr = 0.0
+            best_epoch = max_iter
 
         while True:
             loss = self.loss(*self.forward(
@@ -228,7 +232,7 @@ class SUPAModel(nn.Module):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            if valid_interval is None or (epoch + 1) % valid_interval == 0:
+            if valid_interval != 0 and (valid_interval is None or (epoch + 1) % valid_interval == 0):
                 valid_mrr = valid_model_func(valid_edges, self, neighbors, nodes_tensor, device)
                 if best_valid_mrr > valid_mrr:
                     patient += 1
@@ -243,10 +247,17 @@ class SUPAModel(nn.Module):
             if max_iter is not None and epoch >= max_iter:
                 break
         loss = loss.item()
-        data_iter.write(
-            f'[Batch %4d] [Epoch: %4d/%4d] [Loss: %.3f] [Valid mrr: %.3f -> %.3f] '
-            f'[mask: %.3f, %.3f, %.3f] [ua: %s]' %
-            (batch_i + 1, best_epoch, epoch, loss, init_mrr, valid_mrr,
-             mask_min, mask_avg, mask_max, ', '.join(map(lambda x: '%.3f' % x.item(), self.updater.alpha))))
-        self.load_state_dict(best_mode_state_dict)
+
+        if valid_interval != 0:
+            data_iter.write(
+                f'[Batch %4d] [Epoch: %4d/%4d] [Loss: %.3f] [Valid mrr: %.3f -> %.3f] '
+                f'[mask: %.3f, %.3f, %.3f] [ua: %s]' %
+                (batch_i + 1, best_epoch, epoch, loss, init_mrr, valid_mrr or 0.0,
+                 mask_min, mask_avg, mask_max, ', '.join(map(lambda x: '%.3f' % x.item(), self.updater.alpha))))
+            self.load_state_dict(best_mode_state_dict)
+        else:
+            data_iter.write(
+                f'[Batch %4d] [Epoch: %4d/%4d] [Loss: %.3f] [mask: %.3f, %.3f, %.3f] [ua: %s]' %
+                (batch_i + 1, best_epoch, epoch, loss, mask_min, mask_avg, mask_max,
+                 ', '.join(map(lambda x: '%.3f' % x.item(), self.updater.alpha))))
         self.update_times(edges)
